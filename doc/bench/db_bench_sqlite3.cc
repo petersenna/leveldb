@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3.h>
+#include <unistd.h>
+#include <ctime>
 #include "util/histogram.h"
 #include "util/random.h"
 #include "util/testutil.h"
@@ -27,18 +29,18 @@
 static const char* FLAGS_benchmarks =
     "fillseq,"
     "fillseqsync,"
-    "fillseqbatch,"
+//    "fillseqbatch,"
     "fillrandom,"
     "fillrandsync,"
-    "fillrandbatch,"
+//    "fillrandbatch,"
     "overwrite,"
-    "overwritebatch,"
+//    "overwritebatch,"
     "readrandom,"
     "readseq,"
-    "fillrand100K,"
-    "fillseq100K,"
-    "readseq,"
-    "readrand100K,"
+//    "fillrand100K,"
+//    "fillseq100K,"
+//    "readseq,"
+//    "readrand100K,"
     ;
 
 // Number of key/values to place in database
@@ -260,6 +262,7 @@ class Benchmark {
     }
 
     done_++;
+
     if (done_ >= next_report_) {
       if      (next_report_ < 1000)   next_report_ += 100;
       else if (next_report_ < 5000)   next_report_ += 500;
@@ -268,13 +271,20 @@ class Benchmark {
       else if (next_report_ < 100000) next_report_ += 10000;
       else if (next_report_ < 500000) next_report_ += 50000;
       else                            next_report_ += 100000;
-      fprintf(stderr, "... finished %d ops%30s\r", done_, "");
-      fflush(stderr);
+//      fprintf(stderr, "... finished %d ops%30s\r", done_, "");
+//      fflush(stderr);
     }
   }
 
   void Stop(const Slice& name) {
     double finish = Env::Default()->NowMicros() * 1e-6;
+    char hostname[80] = {};
+    char mbstr[20] = {};
+    std::time_t t = std::time(NULL);
+
+    gethostname(hostname, 256);
+
+    std::strftime(mbstr, sizeof(mbstr), "%Y.%m.%d,%H:%M\0",std::localtime(&t));
 
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
@@ -282,7 +292,8 @@ class Benchmark {
 
     if (bytes_ > 0) {
       char rate[100];
-      snprintf(rate, sizeof(rate), "%6.1f MB/s",
+      //snprintf(rate, sizeof(rate), "%6.1f MB/s",
+      snprintf(rate, sizeof(rate), "%f",
                (bytes_ / 1048576.0) / (finish - start_));
       if (!message_.empty()) {
         message_  = std::string(rate) + " " + message_;
@@ -291,10 +302,12 @@ class Benchmark {
       }
     }
 
-    fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+    //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+    fprintf(stdout, "%s,%s,%s,%f,%s\n",
+            hostname,
+	    mbstr,
             name.ToString().c_str(),
             (finish - start_) * 1e6 / done_,
-            (message_.empty() ? "" : " "),
             message_.c_str());
     if (FLAGS_histogram) {
       fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
@@ -341,7 +354,7 @@ class Benchmark {
   }
 
   void Run() {
-    PrintHeader();
+    //PrintHeader();
     Open();
 
     const char* benchmarks = FLAGS_benchmarks;
@@ -488,13 +501,13 @@ class Benchmark {
       Open();
       Start();
     }
-
+/*
     if (num_entries != num_) {
       char msg[100];
       snprintf(msg, sizeof(msg), "(%d ops)", num_entries);
       message_ = msg;
     }
-
+*/
     char* err_msg = NULL;
     int status;
 
