@@ -282,7 +282,7 @@ class Benchmark {
     char mbstr[20] = {};
     std::time_t t = std::time(NULL);
 
-    gethostname(hostname, 256);
+    gethostname(hostname, sizeof(hostname));
 
     std::strftime(mbstr, sizeof(mbstr), "%Y.%m.%d,%H:%M\0",std::localtime(&t));
 
