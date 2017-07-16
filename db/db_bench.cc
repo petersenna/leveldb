@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <ctime>
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "db/db_impl.h"
 #include "db/version_set.h"
 #include "leveldb/cache.h"
@@ -47,18 +49,18 @@ static const char* FLAGS_benchmarks =
     "fillrandom,"
     "overwrite,"
     "readrandom,"
-    "readrandom,"  // Extra run to allow previous compactions to quiesce
+//    "readrandom,"  // Extra run to allow previous compactions to quiesce
     "readseq,"
-    "readreverse,"
-    "compact,"
-    "readrandom,"
-    "readseq,"
-    "readreverse,"
-    "fill100K,"
-    "crc32c,"
-    "snappycomp,"
-    "snappyuncomp,"
-    "acquireload,"
+//    "readreverse,"
+//    "compact,"
+//    "readrandom,"
+//    "readseq,"
+//    "readreverse,"
+//    "fill100K,"
+//    "crc32c,"
+//    "snappycomp,"
+//    "snappyuncomp,"
+//    "acquireload,"
     ;
 
 // Number of key/values to place in database
@@ -242,8 +244,8 @@ class Stats {
       else if (next_report_ < 100000) next_report_ += 10000;
       else if (next_report_ < 500000) next_report_ += 50000;
       else                            next_report_ += 100000;
-      fprintf(stderr, "... finished %d ops%30s\r", done_, "");
-      fflush(stderr);
+//      fprintf(stderr, "... finished %d ops%30s\r", done_, "");
+//      fflush(stderr);
     }
   }
 
@@ -252,6 +254,12 @@ class Stats {
   }
 
   void Report(const Slice& name) {
+    char hostname[80] = {};
+    char mbstr[20] = {};
+    std::time_t t = std::time(NULL);
+    gethostname(hostname, sizeof(hostname));
+    std::strftime(mbstr, sizeof(mbstr), "%Y.%m.%d,%H:%M\0",std::localtime(&t));
+
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
     if (done_ < 1) done_ = 1;
@@ -262,16 +270,19 @@ class Stats {
       // elapsed times.
       double elapsed = (finish_ - start_) * 1e-6;
       char rate[100];
-      snprintf(rate, sizeof(rate), "%6.1f MB/s",
+      //snprintf(rate, sizeof(rate), "%6.1f MB/s",
+      snprintf(rate, sizeof(rate), "%f",
                (bytes_ / 1048576.0) / elapsed);
       extra = rate;
     }
     AppendWithSpace(&extra, message_);
 
-    fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+    //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+    fprintf(stdout, "%s,%s,leveldb-%s,%f,%s\n",
+	    hostname,
+	    mbstr,
             name.ToString().c_str(),
             seconds_ * 1e6 / done_,
-            (extra.empty() ? "" : " "),
             extra.c_str());
     if (FLAGS_histogram) {
       fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
@@ -431,7 +442,7 @@ class Benchmark {
   }
 
   void Run() {
-    PrintHeader();
+    //PrintHeader();
     Open();
 
     const char* benchmarks = FLAGS_benchmarks;
@@ -742,12 +753,13 @@ class Benchmark {
   }
 
   void DoWrite(ThreadState* thread, bool seq) {
+/*
     if (num_ != FLAGS_num) {
       char msg[100];
       snprintf(msg, sizeof(msg), "(%d ops)", num_);
       thread->stats.AddMessage(msg);
     }
-
+*/
     RandomGenerator gen;
     WriteBatch batch;
     Status s;
@@ -810,9 +822,11 @@ class Benchmark {
       }
       thread->stats.FinishedSingleOp();
     }
+/*
     char msg[100];
     snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
     thread->stats.AddMessage(msg);
+*/
   }
 
   void ReadMissing(ThreadState* thread) {
