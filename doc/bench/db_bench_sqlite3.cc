@@ -303,9 +303,9 @@ class Benchmark {
     }
 
     //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
-    fprintf(stdout, "%s,%s,%s,%f,%s\n",
+    fprintf(stdout, "%s,%s,sqlite3-%s,%f,%s\n",
             hostname,
-	    mbstr,
+            mbstr,
             name.ToString().c_str(),
             (finish - start_) * 1e6 / done_,
             message_.c_str());
