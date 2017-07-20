@@ -81,7 +81,7 @@ static bool FLAGS_WAL_enabled = true;
 static const char* FLAGS_db = NULL;
 
 static int INTERVAL=0;
-static const char* HOSTNAME;
+static char* HOSTNAME;
 
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
@@ -282,6 +282,11 @@ class Benchmark {
   void Stop(const Slice& name) {
     double finish = Env::Default()->NowMicros() * 1e-6;
     std::time_t t = std::time(NULL);
+
+    if (!HOSTNAME) {
+      HOSTNAME = (char *) malloc(sizeof(char) * 128);
+      gethostname(HOSTNAME, 128);
+    }
 
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
@@ -739,6 +744,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
+  // This is to sync task start when running on multiple hosts sort of simultaneously
   next_minute();
 
   while (true){
