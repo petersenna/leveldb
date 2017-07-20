@@ -81,6 +81,7 @@ static bool FLAGS_WAL_enabled = true;
 static const char* FLAGS_db = NULL;
 
 static int INTERVAL=0;
+static const char* HOSTNAME;
 
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
@@ -280,7 +281,6 @@ class Benchmark {
 
   void Stop(const Slice& name) {
     double finish = Env::Default()->NowMicros() * 1e-6;
-    char hostname[80] = {};
     std::time_t t = std::time(NULL);
 
     // Pretend at least one op was done in case we are running a benchmark
@@ -289,14 +289,14 @@ class Benchmark {
 
 
     fprintf(stdout, "PUTVAL %s/sqlite3/latency-%s interval=%d %d:%.3f\n",
-            hostname,
+            HOSTNAME,
             name.ToString().c_str(),
 	    INTERVAL,
 	    t,
             (finish - start_) * 1e6 / done_);
     if (bytes_ > 0) {
       fprintf(stdout, "PUTVAL %s/sqlite3/bitrate-%s interval=%d %d:%.0f\n",
-              hostname,
+              HOSTNAME,
               name.ToString().c_str(),
 	      INTERVAL,
 	      t,
@@ -717,6 +717,8 @@ int main(int argc, char** argv) {
       FLAGS_db = argv[i] + 5;
     } else if (sscanf(argv[i], "--interval=%d%c", &n, &junk) == 1) {
       INTERVAL = n;
+    } else if (leveldb::Slice(argv[i]).starts_with("--hostname=")) {
+      HOSTNAME = argv[i] + strlen("--hostname=");
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
