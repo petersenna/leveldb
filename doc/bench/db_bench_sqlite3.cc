@@ -29,18 +29,18 @@
 static const char* FLAGS_benchmarks =
     "fillseq,"
     "fillseqsync,"
-//    "fillseqbatch,"
+    "fillseqbatch,"
     "fillrandom,"
     "fillrandsync,"
-//    "fillrandbatch,"
+    "fillrandbatch,"
     "overwrite,"
-//    "overwritebatch,"
+    "overwritebatch,"
     "readrandom,"
     "readseq,"
-//    "fillrand100K,"
-//    "fillseq100K,"
-//    "readseq,"
-//    "readrand100K,"
+    "fillrand100K,"
+    "fillseq100K,"
+    "readseq,"
+    "readrand100K,"
     ;
 
 // Number of key/values to place in database
@@ -79,6 +79,8 @@ static bool FLAGS_WAL_enabled = true;
 
 // Use the db with the following name.
 static const char* FLAGS_db = NULL;
+
+static int INTERVAL=0;
 
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
@@ -279,36 +281,27 @@ class Benchmark {
   void Stop(const Slice& name) {
     double finish = Env::Default()->NowMicros() * 1e-6;
     char hostname[80] = {};
-    char mbstr[20] = {};
     std::time_t t = std::time(NULL);
-
-    gethostname(hostname, sizeof(hostname));
-
-    std::strftime(mbstr, sizeof(mbstr), "%Y.%m.%d,%H:%M\0",std::localtime(&t));
 
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
     if (done_ < 1) done_ = 1;
 
-    if (bytes_ > 0) {
-      char rate[100];
-      //snprintf(rate, sizeof(rate), "%6.1f MB/s",
-      snprintf(rate, sizeof(rate), "%f",
-               (bytes_ / 1048576.0) / (finish - start_));
-      if (!message_.empty()) {
-        message_  = std::string(rate) + " " + message_;
-      } else {
-        message_ = rate;
-      }
-    }
 
-    //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
-    fprintf(stdout, "%s,%s,sqlite3-%s,%f,%s\n",
+    fprintf(stdout, "PUTVAL %s/sqlite3/latency-%s interval=%d %d:%.3f\n",
             hostname,
-            mbstr,
             name.ToString().c_str(),
-            (finish - start_) * 1e6 / done_,
-            message_.c_str());
+	    INTERVAL,
+	    t,
+            (finish - start_) * 1e6 / done_);
+    if (bytes_ > 0) {
+      fprintf(stdout, "PUTVAL %s/sqlite3/bitrate-%s interval=%d %d:%.0f\n",
+              hostname,
+              name.ToString().c_str(),
+	      INTERVAL,
+	      t,
+	      (bytes_ * 8) / (finish - start_));
+    }
     if (FLAGS_histogram) {
       fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
     }
@@ -679,8 +672,18 @@ class Benchmark {
 
 }  // namespace leveldb
 
+void next_minute(void) {
+  std::time_t t = std::time(NULL);
+
+  while ((t % 60) != 0) {
+    t = std::time(NULL);
+    sleep(1);
+  }
+}
+
 int main(int argc, char** argv) {
   std::string default_db_path;
+  std::time_t t = std::time(NULL);
   for (int i = 1; i < argc; i++) {
     double d;
     int n;
@@ -712,6 +715,8 @@ int main(int argc, char** argv) {
       FLAGS_WAL_enabled = n;
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
+    } else if (sscanf(argv[i], "--interval=%d%c", &n, &junk) == 1) {
+      INTERVAL = n;
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
@@ -726,6 +731,27 @@ int main(int argc, char** argv) {
   }
 
   leveldb::Benchmark benchmark;
-  benchmark.Run();
+
+  if(!INTERVAL){
+    benchmark.Run();
+    return 0;
+  }
+
+  next_minute();
+
+  while (true){
+    int minutes_interval = INTERVAL / 60;
+    int minutes;
+
+    t = std::time(NULL);
+    minutes = (t / 60) % 60;
+
+    if ((minutes % minutes_interval) == 0){
+      benchmark.Run();
+      next_minute();
+    } else
+      sleep(30);
+  }
+  
   return 0;
 }
