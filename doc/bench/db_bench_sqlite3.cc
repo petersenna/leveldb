@@ -763,7 +763,7 @@ int main(int argc, char** argv) {
 
     if ((minutes % minutes_interval) == 0){
       benchmark.Run();
-      next_minute();
+      return 0;
     } else
       sleep(30);
   }
