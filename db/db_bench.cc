@@ -1055,10 +1055,11 @@ int main(int argc, char** argv) {
 
   leveldb::Benchmark benchmark;
 
-  if(!INTERVAL){
     benchmark.Run();
     return 0;
-  }
+
+  // The following lines were intended to be a mode in which it would run in a
+  // loop. Not in use any more.
 
   // This is to sync task start when running on multiple hosts sort of simultaneously
   next_minute();
