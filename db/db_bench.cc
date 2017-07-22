@@ -49,18 +49,18 @@ static const char* FLAGS_benchmarks =
     "fillrandom,"
     "overwrite,"
     "readrandom,"
-//    "readrandom,"  // Extra run to allow previous compactions to quiesce
+    "readrandom,"  // Extra run to allow previous compactions to quiesce
     "readseq,"
-//    "readreverse,"
-//    "compact,"
-//    "readrandom,"
-//    "readseq,"
-//    "readreverse,"
-//    "fill100K,"
-//    "crc32c,"
-//    "snappycomp,"
-//    "snappyuncomp,"
-//    "acquireload,"
+    "readreverse,"
+    "compact,"
+    "readrandom,"
+    "readseq,"
+    "readreverse,"
+    "fill100K,"
+    "crc32c,"
+    "snappycomp,"
+    "snappyuncomp,"
+    "acquireload,"
     ;
 
 // Number of key/values to place in database
@@ -115,6 +115,9 @@ static bool FLAGS_reuse_logs = false;
 
 // Use the db with the following name.
 static const char* FLAGS_db = NULL;
+
+static int INTERVAL=0;
+static char* HOSTNAME;
 
 namespace leveldb {
 
@@ -255,10 +258,12 @@ class Stats {
 
   void Report(const Slice& name) {
     char hostname[80] = {};
-    char mbstr[20] = {};
     std::time_t t = std::time(NULL);
-    gethostname(hostname, sizeof(hostname));
-    std::strftime(mbstr, sizeof(mbstr), "%Y.%m.%d,%H:%M\0",std::localtime(&t));
+
+    if (!HOSTNAME) {
+      HOSTNAME = (char *) malloc(sizeof(char) * 128);
+      gethostname(HOSTNAME, 128);
+    }
 
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
@@ -278,9 +283,8 @@ class Stats {
     AppendWithSpace(&extra, message_);
 
     //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
-    fprintf(stdout, "%s,%s,leveldb-%s,%f,%s\n",
-	    hostname,
-	    mbstr,
+    fprintf(stdout, "PUTVAL %s/leveldb/bitrate-%s interval=X %3.2f %s\n",
+	    HOSTNAME,
             name.ToString().c_str(),
             seconds_ * 1e6 / done_,
             extra.c_str());
@@ -967,12 +971,22 @@ class Benchmark {
 
 }  // namespace leveldb
 
+void next_minute(void) {
+  std::time_t t = std::time(NULL);
+
+  while ((t % 60) != 0) {
+    t = std::time(NULL);
+    sleep(1);
+  }
+}
+
 int main(int argc, char** argv) {
   FLAGS_write_buffer_size = leveldb::Options().write_buffer_size;
   FLAGS_max_file_size = leveldb::Options().max_file_size;
   FLAGS_block_size = leveldb::Options().block_size;
   FLAGS_open_files = leveldb::Options().max_open_files;
   std::string default_db_path;
+  std::time_t t = std::time(NULL);
 
   for (int i = 1; i < argc; i++) {
     double d;
@@ -1013,6 +1027,10 @@ int main(int argc, char** argv) {
       FLAGS_open_files = n;
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
+    } else if (sscanf(argv[i], "--interval=%d%c", &n, &junk) == 1) {
+      INTERVAL = n;
+    } else if (leveldb::Slice(argv[i]).starts_with("--hostname=")) {
+      HOSTNAME = argv[i] + strlen("--hostname=");
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
@@ -1029,6 +1047,28 @@ int main(int argc, char** argv) {
   }
 
   leveldb::Benchmark benchmark;
-  benchmark.Run();
+
+  if(!INTERVAL){
+    benchmark.Run();
+    return 0;
+  }
+
+  // This is to sync task start when running on multiple hosts sort of simultaneously
+  next_minute();
+
+  while (true){
+    int minutes_interval = INTERVAL / 60;
+    int minutes;
+
+    t = std::time(NULL);
+    minutes = (t / 60) % 60;
+
+    if ((minutes % minutes_interval) == 0){
+      benchmark.Run();
+      next_minute();
+    } else
+      sleep(30);
+  }
+
   return 0;
 }
