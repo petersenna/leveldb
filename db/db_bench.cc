@@ -283,10 +283,17 @@ class Stats {
     AppendWithSpace(&extra, message_);
 
     //fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
-    fprintf(stdout, "PUTVAL %s/leveldb/bitrate-%s interval=X %3.2f %s\n",
+    fprintf(stdout, "PUTVAL %s/leveldb/latency-%s interval=%d %d:%3.3f\n",
 	    HOSTNAME,
             name.ToString().c_str(),
-            seconds_ * 1e6 / done_,
+	    INTERVAL,
+	    t,
+            seconds_ * 1e6 / done_);
+    fprintf(stdout, "PUTVAL %s/leveldb/bitrate-%s interval=%d %d:%s\n",
+	    HOSTNAME,
+            name.ToString().c_str(),
+	    INTERVAL,
+	    t,
             extra.c_str());
     if (FLAGS_histogram) {
       fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
@@ -1065,7 +1072,7 @@ int main(int argc, char** argv) {
 
     if ((minutes % minutes_interval) == 0){
       benchmark.Run();
-      next_minute();
+      return 0;
     } else
       sleep(30);
   }
