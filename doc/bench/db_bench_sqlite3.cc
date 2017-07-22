@@ -332,8 +332,14 @@ class Benchmark {
     rand_(301) {
     std::vector<std::string> files;
     std::string test_dir;
-    Env::Default()->GetTestDirectory(&test_dir);
-    Env::Default()->GetChildren(test_dir, &files);
+    //Env::Default()->GetTestDirectory(&test_dir);
+    //Env::Default()->GetChildren(test_dir, &files);
+    Env::Default()->GetChildren(FLAGS_db, &files);
+
+    for (size_t i = 0; i < files.size(); i++) {
+      Env::Default()->DeleteFile(std::string(FLAGS_db) + "/" + files[i]);
+    }
+
     if (!FLAGS_use_existing_db) {
       for (int i = 0; i < files.size(); i++) {
         if (Slice(files[i]).starts_with("dbbench_sqlite3")) {
@@ -341,7 +347,7 @@ class Benchmark {
           file_name += "/";
           file_name += files[i];
           Env::Default()->DeleteFile(file_name.c_str());
-        }
+	}
       }
     }
   }
@@ -438,7 +444,8 @@ class Benchmark {
     Env::Default()->GetTestDirectory(&tmp_dir);
     snprintf(file_name, sizeof(file_name),
              "%s/dbbench_sqlite3-%d.db",
-             tmp_dir.c_str(),
+	     FLAGS_db,
+             //tmp_dir.c_str(),
              db_num_);
     status = sqlite3_open(file_name, &db_);
     if (status) {
