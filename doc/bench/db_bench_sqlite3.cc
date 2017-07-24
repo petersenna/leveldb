@@ -44,13 +44,13 @@ static const char* FLAGS_benchmarks =
     ;
 
 // Number of key/values to place in database
-static int FLAGS_num = 425000;
+static int FLAGS_num = 1000000;
 
 // Number of read operations to do.  If negative, do FLAGS_num reads.
 static int FLAGS_reads = -1;
 
 // Size of each value
-static int FLAGS_value_size = 8192;
+static int FLAGS_value_size = 100;
 
 // Print histogram of operation timings
 static bool FLAGS_histogram = false;
@@ -60,11 +60,11 @@ static bool FLAGS_histogram = false;
 static double FLAGS_compression_ratio = 0.5;
 
 // Page size. Default 1 KB.
-static int FLAGS_page_size = 4096;
+static int FLAGS_page_size = 1024;
 
 // Number of pages.
 // Default cache size = FLAGS_page_size * FLAGS_num_pages = 4 MB.
-static int FLAGS_num_pages = 1024;
+static int FLAGS_num_pages = 4096;
 
 // If true, do not destroy the existing database.  If you set this
 // flag and also specify a benchmark that wants a fresh database, that
