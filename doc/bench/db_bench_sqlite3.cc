@@ -300,7 +300,7 @@ class Benchmark {
 	    t,
             (finish - start_) * 1e6 / done_);
     if (bytes_ > 0) {
-      fprintf(stdout, "PUTVAL %s/sqlite3/bitrate-%s interval=%d %d:%.0f\n",
+      fprintf(stdout, "PUTVAL %s/sqlite3/gauge-%s interval=%d %d:%.0f\n",
               HOSTNAME,
               name.ToString().c_str(),
 	      INTERVAL,

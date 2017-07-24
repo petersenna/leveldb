@@ -289,7 +289,7 @@ class Stats {
 	    INTERVAL,
 	    t,
             seconds_ * 1e6 / done_);
-    fprintf(stdout, "PUTVAL %s/leveldb/bitrate-%s interval=%d %d:%s\n",
+    fprintf(stdout, "PUTVAL %s/leveldb/gauge-%s interval=%d %d:%s\n",
 	    HOSTNAME,
             name.ToString().c_str(),
 	    INTERVAL,
